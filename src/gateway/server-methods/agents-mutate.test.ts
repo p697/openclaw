@@ -416,13 +416,14 @@ describe("agents.update", () => {
   });
 
   it("writes both emoji and avatar to IDENTITY.md when both provided", async () => {
-    const { promise } = makeCall("agents.update", {
+    const { respond, promise } = makeCall("agents.update", {
       agentId: "test-agent",
       emoji: "🤖",
       avatar: "https://example.com/avatar.png",
     });
     await promise;
 
+    expect(respond).toHaveBeenCalledWith(true, { ok: true, agentId: "test-agent" }, undefined);
     expect(mocks.fsAppendFile).toHaveBeenCalledWith(
       expect.stringContaining("IDENTITY.md"),
       expect.stringMatching(/- Emoji: 🤖[\s\S]*- Avatar:/),
