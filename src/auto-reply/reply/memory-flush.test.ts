@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../../config/config.js";
-import { resolveMemoryFlushPromptForRun } from "./memory-flush.js";
+import { resolveMemoryFlushPromptForRun, shouldRunMemoryFlush } from "./memory-flush.js";
 
 describe("resolveMemoryFlushPromptForRun", () => {
   const cfg = {
@@ -33,5 +33,27 @@ describe("resolveMemoryFlushPromptForRun", () => {
 
     expect(prompt).toContain("Current time: already present");
     expect((prompt.match(/Current time:/g) ?? []).length).toBe(1);
+  });
+});
+
+describe("shouldRunMemoryFlush", () => {
+  it("skips during the memory flush cooldown window", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-03T10:00:00.000Z"));
+
+    expect(
+      shouldRunMemoryFlush({
+        entry: {
+          totalTokens: 96_000,
+          compactionCount: 1,
+          memoryFlushAt: Date.now() - 60_000,
+        },
+        contextWindowTokens: 100_000,
+        reserveTokensFloor: 2_000,
+        softThresholdTokens: 1_000,
+      }),
+    ).toBe(false);
+
+    vi.useRealTimers();
   });
 });

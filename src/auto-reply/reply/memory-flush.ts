@@ -124,7 +124,11 @@ export function resolveMemoryFlushContextWindowTokens(params: {
 export function shouldRunMemoryFlush(params: {
   entry?: Pick<
     SessionEntry,
-    "totalTokens" | "totalTokensFresh" | "compactionCount" | "memoryFlushCompactionCount"
+    | "totalTokens"
+    | "totalTokensFresh"
+    | "compactionCount"
+    | "memoryFlushAt"
+    | "memoryFlushCompactionCount"
   >;
   /**
    * Optional token count override for flush gating. When provided, this value is
@@ -158,6 +162,12 @@ export function shouldRunMemoryFlush(params: {
     return false;
   }
   if (totalTokens < threshold) {
+    return false;
+  }
+
+  // Time-based cooldown to prevent flush loops (#8723, #30115).
+  const memoryFlushAt = params.entry.memoryFlushAt;
+  if (typeof memoryFlushAt === "number" && Date.now() - memoryFlushAt < 5 * 60 * 1000) {
     return false;
   }
 
